@@ -5,13 +5,13 @@ import numpy as np
 import cv2
 import glob
 import time
-from sklearn.svm import LinearSVC
+import pdb
+from sklearn.svm import LinearSVC, SVC
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from skimage.feature import hog
-#from functions import *
+from functions import *
 
-image_format = 'png'
 
 # Define a function to compute binned color features  
 def bin_spatial(img, size=(32, 32)):
@@ -51,56 +51,42 @@ def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False, featu
 
 # Define a function to extract features from a list of images
 # Have this function call bin_spatial() and color_hist()
-def extract_features(imgs, cspace='RGB', orient=9, pix_per_cell=8, cell_per_block=2, hog_channel=0, spatial_size=(32, 32), hist_bins=32, hist_range=(0, 256)):
-    # Create a list to append feature vectors to
-    features = []
-    # Iterate through the list of images
-    for file in imgs:
-        # Read in each one by one
-        if image_format == 'png':
-        	image = cv2.imread(file) # png
-        else:
-        	image = mpimg.imread(file) #jpeg
-        # apply color conversion if other than 'RGB'
-        if cspace != 'RGB':
-            if cspace == 'HSV':
-                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
-            elif cspace == 'LUV':
-                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2LUV)
-            elif cspace == 'HLS':
-                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
-            elif cspace == 'YUV':
-                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
-            elif cspace == 'YCrCb':
-                feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
-        else: feature_image = np.copy(image)      
-
-        # Call get_hog_features() with vis=False, feature_vec=True
-        if hog_channel == 'ALL':
-            hog_features = []
-            for channel in range(feature_image.shape[2]):
-                hog_features.append(get_hog_features(feature_image[:,:,channel], 
-                                    orient, pix_per_cell, cell_per_block, 
-                                    vis=False, feature_vec=True))
-            hog_features = np.ravel(hog_features)        
-        else:
-            hog_features = get_hog_features(feature_image[:,:,hog_channel], orient, 
-                        pix_per_cell, cell_per_block, vis=False, feature_vec=True)
-        # Apply bin_spatial() to get spatial color features
-        spatial_features = bin_spatial(feature_image, size=spatial_size)
-        # Apply color_hist() also with a color space option now
-        hist_features = color_hist(feature_image, nbins=hist_bins, bins_range=hist_range)                
-        # Append the new feature vector to the features list
-        features.append(np.concatenate((hog_features, spatial_features, hist_features)))
-    # Return list of feature vectors
-    return features
+def extract_features(imgs, orient=9, pix_per_cell=8, cell_per_block=2, spatial_size=(32, 32), hist_bins=32, hist_range=(0, 256)):
+	# Create a list to append feature vectors to
+	features = []
+	# Iterate through the list of images
+	for file in imgs:
+		# Read in each one by one
+		img = cv2.imread(file)
+	
+		ctrans_tosearch = convert_color(img, conv='BGR2YCrCb')
+		#images = [ctrans_tosearch, cv2.flip(ctrans_tosearch, 1)]
+			
+		#for image in images:
+		ch1 = ctrans_tosearch[:,:,0]
+		ch2 = ctrans_tosearch[:,:,1]
+		ch3 = ctrans_tosearch[:,:,2]
+	
+		# Compute individual channel HOG features for the entire image
+		hog1 = get_hog_features(ch1, orient, pix_per_cell, cell_per_block, feature_vec=True)
+		hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=True)
+		hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=True)
+		hog_features = np.hstack((hog1, hog2, hog3))
+	
+		# Get color features
+		spatial_features = bin_spatial(ctrans_tosearch, size=spatial_size)
+		hist_features = color_hist(ctrans_tosearch, nbins=hist_bins)
+	
+		# Scale features and make a prediction
+		features.append(np.concatenate((spatial_features, hist_features, hog_features)))#.reshape(1, -1))
+		# features = X_scaler.transform(np.hstack((spatial_features, hist_features, hog_features)).reshape(1, -1))    
+		# test_features = X_scaler.transform(np.hstack((shape_feat, hist_feat)).reshape(1, -1))
+				
+	return features
 
 
 # Divide up into cars and notcars
-if image_format == 'png':
-	images = glob.glob('*vehicles/**/*.png')
-else:
-	images = glob.glob('*vehicles_smallset/**/*.jpeg')
+images = glob.glob('*vehicles/**/*.png')
 cars = []
 notcars = []
 for image in images:
@@ -109,45 +95,22 @@ for image in images:
     else:
         cars.append(image)
 
-'''
-print(len(images))
-print(len(cars))
-print(len(notcars))
-
-data_info = data_look(cars, notcars)
-
-print('Your function returned a count of', 
-      data_info["n_cars"], ' cars and', 
-      data_info["n_notcars"], ' non-cars')
-print('of size: ',data_info["image_shape"], ' and data type:', 
-      data_info["data_type"])
-
-# Reduce the sample size because HOG features are slow to compute
-# The quiz evaluator times out after 13s of CPU time
-sample_size = 500
-cars = cars[0:sample_size]
-notcars = notcars[0:sample_size]
-'''
-
 ### TODO: Tweak these parameters and see how the results change.
-colorspace = 'LUV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-orient = 9
-pix_per_cell = 8
+orient = 9 #16
+pix_per_cell = 8 #16
 cell_per_block = 2
-hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
-spatial = 12
-histbin = 48
+spatial = 32 #12
+histbin = 32 #4
 
 t=time.time()
-car_features = extract_features(cars, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=(spatial, spatial),
-                        hist_bins=histbin, hist_range=(0, 256))
-notcar_features = extract_features(notcars, cspace=colorspace, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, hog_channel=hog_channel, spatial_size=(spatial, spatial),
-                        hist_bins=histbin, hist_range=(0, 256))
+car_features = extract_features(cars, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, spatial_size=(spatial, spatial), hist_bins=histbin, hist_range=(0, 256))
+notcar_features = extract_features(notcars, orient=orient, pix_per_cell=pix_per_cell, cell_per_block=cell_per_block, spatial_size=(spatial, spatial), hist_bins=histbin, hist_range=(0, 256))
 t2 = time.time()
 print(round(t2-t, 2), 'Seconds to extract HOG features...')
 # Create an array stack of feature vectors
-X = np.vstack((car_features, notcar_features)).astype(np.float64)                      
+X = np.vstack((car_features, notcar_features)).astype(np.float64)                        
 # Fit a per-column scaler
+
 X_scaler = StandardScaler().fit(X)
 # Apply the scaler to X
 scaled_X = X_scaler.transform(X)
@@ -157,31 +120,31 @@ y = np.hstack((np.ones(len(car_features)), np.zeros(len(notcar_features))))
 
 
 # Split up data into randomized training and test sets
-rand_state = np.random.randint(0, 100)
-X_train, X_test, y_train, y_test = train_test_split(
-    scaled_X, y, test_size=0.2, random_state=rand_state)
+#rand_state = np.random.randint(0, 100)
+#X_train, X_test, y_train, y_test = train_test_split(
+#    scaled_X, y, test_size=0.2, random_state=rand_state)
 
 print('Using:',orient,'orientations',pix_per_cell,
     'pixels per cell and', cell_per_block,'cells per block')
-print('Feature vector length:', len(X_train[0]))
+print('Feature vector length:', len(X[0]))
 # Use a linear SVC 
 svc = LinearSVC()
 # Check the training time for the SVC
 t=time.time()
-svc.fit(X_train, y_train)
+svc.fit(scaled_X, y)
 t2 = time.time()
 print(round(t2-t, 2), 'Seconds to train SVC...')
 # Check the score of the SVC
-print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
+#print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
 # Check the prediction time for a single sample
-t=time.time()
-n_predict = 10
-print('My SVC predicts: ', svc.predict(X_test[0:n_predict]))
-print('For these',n_predict, 'labels: ', y_test[0:n_predict])
-t2 = time.time()
-print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
+#t=time.time()
+#n_predict = 10
+#print('My SVC predicts: ', svc.predict(X_test[0:n_predict]))
+#print('For these',n_predict, 'labels: ', y_test[0:n_predict])
+#t2 = time.time()
+#print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
 
 #Save the model and parameters
-obj = dict(((k, eval(k)) for k in ('colorspace', 'orient', 'pix_per_cell', 'cell_per_block', 'hog_channel', 'spatial', 'histbin', 'svc', 'X_scaler')))
+obj = dict(((k, eval(k)) for k in ('orient', 'pix_per_cell', 'cell_per_block', 'spatial', 'histbin', 'svc', 'X_scaler')))
 with open('classifier.p', 'wb') as handle:
     pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)

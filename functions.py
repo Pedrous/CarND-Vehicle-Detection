@@ -20,12 +20,29 @@ def data_look(car_list, notcar_list):
     return data_dict
 
 def convert_color(img, conv='RGB2YCrCb'):
-    if conv == 'RGB2YCrCb':
-        return cv2.cvtColor(img, cv2.COLOR_RGB2YCrCb)
-    if conv == 'BGR2YCrCb':
-        return cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
-    if conv == 'RGB2LUV':
-        return cv2.cvtColor(img, cv2.COLOR_RGB2LUV)
+	if conv == 'BGR2RGB':
+		converted = cv2.cvtColor(img, cv2.COLOR_RGB2YCrCb)
+	if conv == 'BGR2HSV':
+		converted = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+	if conv == 'BGR2LUV':
+		converted = cv2.cvtColor(img, cv2.COLOR_BGR2LUV)
+	if conv == 'BGR2HLS':
+		converted = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+	if conv == 'BGR2YUV':
+		converted = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
+	if conv == 'BGR2YCrCb':
+		converted = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
+	if conv == 'RGB2HSV':
+		converted = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+	if conv == 'RGB2LUV':
+		converted = cv2.cvtColor(img, cv2.COLOR_RGB2LUV)
+	if conv == 'RGB2HLS':
+		converted = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
+	if conv == 'RGB2YUV':
+		converted = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
+	if conv == 'RGB2YCrCb':
+		converted = cv2.cvtColor(img, cv2.COLOR_RGB2YCrCb)
+	return converted
 
 # Define a function to return HOG features and visualization
 def get_hog_features(img, orient, pix_per_cell, cell_per_block, 
@@ -164,7 +181,7 @@ def slide_window(img, x_start_stop=[None, None], y_start_stop=[None, None],
     return window_list
 
 # Define a function to draw bounding boxes
-def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
+def draw_boxes(img, bboxes, color=(0, 0, 255), thick=3):
     # Make a copy of the image
     imcopy = np.copy(img)
     # Iterate through the bounding boxes

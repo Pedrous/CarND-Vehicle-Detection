@@ -4,6 +4,7 @@ import numpy as np
 import cv2
 import glob
 import time
+import pdb
 from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
 # NOTE: the next import is only valid 
@@ -11,6 +12,7 @@ from sklearn.preprocessing import StandardScaler
 # if you are using scikit-learn >= 0.18 then use this:
 # from sklearn.model_selection import train_test_split
 from sklearn.cross_validation import train_test_split
+from itertools import compress
 
 # Define a function to compute binned color features  
 def bin_spatial(img, size=(32, 32)):
@@ -59,27 +61,71 @@ def extract_features(imgs, cspace='RGB', spatial_size=(32, 32),
         features.append(np.concatenate((spatial_features, hist_features)))
     # Return list of feature vectors
     return features
-
+	
+	
+def splitData(X, y, labels, test_size=0.2):
+	trainX = np.array([])
+	trainy = np.array([])
+	testX = np.array([])
+	testy = np.array([])
+	labels = np.append(labels, 5*np.ones(X.shape[0] - len(labels)))
+	
+	for i in range(0,6):
+		partX = X[labels == i]
+		party = y[labels == i]
+		if i < 4:
+			div_ind = int(len(partX)*(1-test_size))
+			part_trainX = partX[:div_ind]
+			part_testX = partX[div_ind:]
+			part_trainy = party[:div_ind]
+			part_testy = party[div_ind:]
+		else:
+			rand_state = np.random.randint(0, 100)
+			part_trainX, part_testX, part_trainy, part_testy = train_test_split(partX, party, test_size=0.2, random_state=rand_state)
+		if i == 0:
+			trainX = part_trainX
+			testX = part_testX
+			trainy = part_trainy
+			testy = part_testy
+		else:
+			trainX = np.vstack((trainX, part_trainX)).astype(np.float64)
+			testX = np.vstack((testX, part_testX)).astype(np.float64)
+			trainy = np.hstack((trainy, part_trainy)).astype(np.float64)
+			testy = np.hstack((testy, part_testy)).astype(np.float64)
+			
+	return trainX, testX, trainy, testy
+	
 
 # Divide up into cars and notcars
 images = glob.glob('*vehicles/**/*.png')
 cars = []
+car_labels = np.array([], dtype=int)
+non_vehicles = 0
 notcars = []
 for image in images:
-    if 'non-vehicles' in image:
-        notcars.append(image)
-    else:
-        cars.append(image)
+	if 'non-vehicles' in image:
+		notcars.append(image)
+		non_vehicles += 1
+	else:
+		cars.append(image)
+		if 'vehicles\GTI_Far' in image:
+			car_labels = np.append(car_labels, 0)
+		if 'vehicles\GTI_Left' in image:
+			car_labels = np.append(car_labels, 1)
+		if 'vehicles\GTI_MiddleClose' in image:
+			car_labels = np.append(car_labels, 2)
+		if 'vehicles\GTI_Right' in image:
+			car_labels = np.append(car_labels, 3)
+		if 'vehicles\KITTI_extracted' in image:
+			car_labels = np.append(car_labels, 4)
 
 # TODO play with these values to see how your classifier
 # performs under different binning scenarios
 spatial = 12
-histbin = 48
+histbin = 4
 
-car_features = extract_features(cars, cspace='RGB', spatial_size=(spatial, spatial),
-                        hist_bins=histbin, hist_range=(0, 256))
-notcar_features = extract_features(notcars, cspace='RGB', spatial_size=(spatial, spatial),
-                        hist_bins=histbin, hist_range=(0, 256))
+car_features = extract_features(cars, cspace='LUV', spatial_size=(spatial, spatial), hist_bins=histbin, hist_range=(0, 256))
+notcar_features = extract_features(notcars, cspace='LUV', spatial_size=(spatial, spatial), hist_bins=histbin, hist_range=(0, 256))
 
 # Create an array stack of feature vectors
 X = np.vstack((car_features, notcar_features)).astype(np.float64)                        
@@ -93,9 +139,9 @@ y = np.hstack((np.ones(len(car_features)), np.zeros(len(notcar_features))))
 
 
 # Split up data into randomized training and test sets
-rand_state = np.random.randint(0, 100)
-X_train, X_test, y_train, y_test = train_test_split(
-    scaled_X, y, test_size=0.2, random_state=rand_state)
+#rand_state = np.random.randint(0, 100)
+#X_train, X_test, y_train, y_test = train_test_split(scaled_X, y, test_size=0.2, random_state=rand_state)
+X_train, X_test, y_train, y_test = splitData(scaled_X, y, car_labels, test_size=0.1)
 
 print('Using spatial binning of:',spatial,
     'and', histbin,'histogram bins')
