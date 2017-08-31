@@ -37,7 +37,7 @@ The sliding window technique is implemented in file `detectvideo.py` in lines 78
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
-Ultimately I searched on 4 scales (1, 1.25, 1.5 and 2) using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result. I also used thresholding of the decision function to reduce the amount of false positives. Here are some example images:
+Ultimately I searched on 4 scales (1, 1.25, 1.5 and 2) using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result. I also used thresholding of the decision function to reduce the amount of false positives. Here are some example images (the problem is that I used the same pipeline for the test images than for the videos, but that obviously doesn't work because the are not consequent frames):
 
 ![alt text][image1]
 ![alt text][image2]
