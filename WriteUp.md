@@ -17,6 +17,7 @@
 
 You're reading it!
 
+---
 ### Histogram of Oriented Gradients (HOG)
 
 #### 1. Explain how (and identify where in your code) you extracted HOG features from the training images.
@@ -29,6 +30,7 @@ I then explored different color spaces and different `skimage.hog()` parameters 
 
 I trained a linear SVM using by using `sklearn.LinearSVC()` in lines 11 through 131 in file `combined_classify.py`, First I trained the classifier by using 80 % of the data to train and 20 % of the data to test the the classifier. The test accuracy was about 0.999 with randomly picked data and when I handpicked the data, the test accuracy was still more than 0.99. After this I also confirmed that there not too many false positives with this method in the test_images nor the video. Before this I normalized the data by using `sklearn.StandardScaler()`.
 
+---
 ### Sliding Window Search
 
 #### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
@@ -45,8 +47,8 @@ Ultimately I searched on 4 scales (1, 1.25, 1.5 and 2) using YCrCb 3-channel HOG
 ![alt text][image4]
 ![alt text][image5]
 ![alt text][image6]
----
 
+---
 ### Video Implementation
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
@@ -57,10 +59,7 @@ Here's a [video for my output](./project_output.mp4)
 
 I recorded the positions of positive detections in each frame of the video.  From the positive detections over last 10 frames (This helped to reduce the noise and false postives as well) I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
 
-
-
 ---
-
 ### Discussion
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
