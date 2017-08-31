@@ -1,12 +1,12 @@
 [//]: # (Image References)
-[image1]: ./examples/car_not_car.png
-[image2]: ./examples/HOG_example.jpg
-[image3]: ./examples/sliding_windows.jpg
-[image4]: ./examples/sliding_window.jpg
-[image5]: ./examples/bboxes_and_heat.png
-[image6]: ./examples/labels_map.png
+[image1]: ./output_images/output0.jpg
+[image2]: ./output_images/output1.jpg
+[image3]: ./output_images/output2.jpg
+[image4]: ./output_images/output3.jpg
+[image5]: ./output_images/output4.jpg
+[image6]: ./output_images/output5.jpg
 [image7]: ./examples/output_bboxes.png
-[video1]: ./project_video.mp4
+[video1]: ./project_output.mp4
 
 ###Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
 
@@ -33,38 +33,29 @@ I trained a linear SVM using by using `sklearn.LinearSVC()` in lines 11 through 
 
 ####1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
 
-The sliding window technique is implemented in file `detectvideo.py` in lines 78 through 114. I decided to use for 2 cells for each step because it was giving me good enough results in comparison to 1 step for cell which was taking too much of time.
-
-![alt text][image3]
+The sliding window technique is implemented in file `detectvideo.py` in lines 78 through 114. I decided to use for 2 cells for each step because it was giving me good enough results in comparison to 1 step for cell which was taking too much of time. The idea is that a preferred part of the image is selected, then it is scaled to preferred resolution and the HOG features are calculated for the whole image and after this eh sliding window technique is used to compare the features of the classifier to each 64 by 64 window in the image.
 
 ####2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
-Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
+Ultimately I searched on 4 scales (1, 1.25, 1.5 and 2) using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result. I also used thresholding of the decision function to reduce the amount of false positives. Here are some example images:
 
+![alt text][image1]
+![alt text][image2]
+![alt text][image3]
 ![alt text][image4]
+![alt text][image5]
+![alt text][image6]
 ---
 
 ### Video Implementation
 
 ####1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](./project_video.mp4)
+Here's a [video1](./project_output.mp4)
 
 
 ####2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
-
-Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
-
-### Here are six frames and their corresponding heatmaps:
-
-![alt text][image5]
-
-### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
-![alt text][image6]
-
-### Here the resulting bounding boxes are drawn onto the last frame in the series:
-![alt text][image7]
+I recorded the positions of positive detections in each frame of the video.  From the positive detections over last 10 frames (This helped to reduce the noise and false postives as well) I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
 
 
 
@@ -74,5 +65,5 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 ####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+There is quite many parameters in the pipeline so it was really hard to find ones that work. I guess that my pipeline could fail quite easily in other conditions because of too many false positives. To improve the method, first of all the classifier should trained with much more data. Second of all, I would like to test the pipeline so that I would take the detections from various videos for each scale, let's say scales between 8 pixels and see how each scale can perform in each area. Then optimize the scales in the area to avoid unnecessary calculation and to optimize that the found boxes should be very close to the borders of the objects. After this it should be quite easy to filter the false positives by using the decision function and then the heatmap could be used to clarify the borders of the detected vehicles. Also the decision function values could be used to multiply the probabilities of the overlapping detections over few frames together to get an idea about if it is really a detection or not. When the measurements would be quite accurate, the estimate could be improved by using a kalman filter, although it might a bit complicated to define a model for the process. Also it would be nice to track the vehicle movement to know where to look for the vehicle in the next frame instead of searching the whole image in each frame. Then it would be enough to search for the borders and the vehicles that are already detected. 
 
